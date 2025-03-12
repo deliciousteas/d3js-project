@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCA Visualization</title>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <style>
+        
+        .loading-label {
+            font-size: 10px;
+            fill: rgb(241, 7, 7);
+        }
+        .origin-line {
+            stroke: black;
+            stroke-width: 1;
+            stroke-dasharray: 3;
+        }
+        .point {
+            fill: steelblue;
+        }
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+    </style>
+</head>
+<body>
+    <div id="scatter-plot"></div>
+    <script>
+        // 数据路径
+        const data_path = "../data/pca_data.csv";
+
+        // 读取数据
+        d3.csv(data_path).then(function(data) {
+            // 转换数据格式
+            data.forEach(d => {
+                d.PC1 = +d.PC_1;
+                d.PC2 = +d.PC_2;
+                d.PC3 = +d.PC_3;
+                d.PC4 = +d.PC_4;
+            });
+
+            // 提取数据点
+            const samples = data.map(d => [d.PC1, d.PC2]);
+
+            // K-means聚类
+            const k = 3; // 假设分为3个簇
+            const centroids = kmeans(samples, k);
+
+            // 为每个点分配簇ID
+            data.forEach(d => {
+                const distances = centroids.map(centroid => {
+                    return Math.hypot(d.PC1 - centroid[0], d.PC2 - centroid[1]);
+                });
+                d.cluster = distances.indexOf(Math.min(...distances));
+                
+            });
+
+            // 设置SVG画布
+            const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+            const width = 800 - margin.left - margin.right;
+            const height = 600 - margin.top - margin.bottom;
+
+            const svg = d3.select("#scatter-plot")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // 定义比例尺
+            const x = d3.scaleLinear()
+                .domain([d3.min(samples, d => d[0]), d3.max(samples, d => d[0])])
+                .range([0, width]);
+
+            const y = d3.scaleLinear()
+                .domain([d3.min(samples, d => d[1]), d3.max(samples, d => d[1])])
+                .range([height, 0]);
+
+            // 添加X轴
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x));
+
+            // 添加Y轴
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+            // 添加标题
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", 10 + height + margin.bottom / 2)
+                .style("text-anchor", "middle")
+                .text("PC1");
+
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -margin.left / 2 - 10)
+                .attr("x", -height / 2)
+                .style("text-anchor", "middle")
+                .text("PC2");
+
+            // 绘制数据点
+            svg.selectAll(".point")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "point")
+                .attr("cx", d => x(d.PC1))
+                .attr("cy", d => y(d.PC2))
+                .attr("r", 1)
+                .enter()
+                .attr("fill", d => d3.schemeCategory10[d.clusters.toString()]);
+            
+        
+            
+            // 添加聚类中心
+            svg.selectAll(".centroid")
+                .data(centroids)
+                .enter().append("circle")
+                .attr("class", "centroid")
+                .attr("cx", d => x(d[0]))
+                .attr("cy", d => y(d[1]))
+                .attr("r", 5)
+                .attr("fill", "red");
+
+            // 添加聚类标签
+            svg.selectAll(".cluster-label")
+                .data([...new Set(data.map(d => d.cluster))])
+                .enter().append("text")
+                .attr("class", "cluster-label")
+                .attr("x", width / 2)
+                .attr("y", 10 + height + margin.bottom / 2 + 20)
+                .style("text-anchor", "middle")
+                .text(d => `Cluster ${d.clusters}`);
+        });
+
+        // K-means聚类函数
+        function kmeans(data, k, maxIterations = 100) {
+            // 随机选择初始聚类中心
+            const centroids = data.slice(0, k);
+
+            for (let i = 0; i < maxIterations; i++) {
+                const clusters = data.map(point => {
+                    const distances = centroids.map(centroid => {
+                        return Math.hypot(point[0] - centroid[0], point[1] - centroid[1]);
+                    });
+                    return distances.indexOf(Math.min(...distances));
+                });
+
+                // 更新聚类中心
+                const newCentroids = Array.from({ length: k }, () => [0, 0]);
+                const counts = Array.from({ length: k }, () => 0);
+
+                data.forEach((point, index) => {
+                    const cluster = clusters[index];
+                    newCentroids[cluster][0] += point[0];
+                    newCentroids[cluster][1] += point[1];
+                    counts[cluster]++;
+                });
+
+                newCentroids.forEach((centroid, index) => {
+                    if (counts[index] > 0) {
+                        centroid[0] /= counts[index];
+                        centroid[1] /= counts[index];
+                    }
+                });
+
+                // 检查是否收敛
+                if (JSON.stringify(centroids) === JSON.stringify(newCentroids)) {
+                    break;
+                }
+
+                centroids.splice(0, k, ...newCentroids);
+            }
+
+            return centroids;
+        }
+    </script>
+</body>
+</html>

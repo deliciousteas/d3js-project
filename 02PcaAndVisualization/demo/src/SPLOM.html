@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Scatterplot Matrix with PCA Loadings</title>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <style>
+        .axis text {
+            font: 10px sans-serif;
+        }
+        .axis line, .axis path {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+        .cell text {
+            font-size: 12px;
+            font-weight: bold;
+            text-anchor: middle;
+            fill: black;
+        }
+        .dot {
+            fill: steelblue;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div id="scatterplot-matrix"></div>
+
+    <script>
+        // Configure the chart
+        const margin = { top: 50, right: 50, bottom: 50, left: 50 };
+        const cellSize = 250; // 增大单元格大小
+        const n = 4;
+        const width = n * cellSize + margin.left + margin.right;
+        const height = n * cellSize + margin.top + margin.bottom;
+
+        // Create SVG container
+        const svg = d3.select("#scatterplot-matrix")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g")
+            .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+        // Load data
+        d3.csv("../data/loadings.csv").then(data => {
+            const columns = ["PC_1", "PC_2", "PC_3", "PC_4"];
+            const xScales = {};
+            const yScales = {};
+
+            // Calculate scales for each column
+            columns.forEach((col, i) => {
+                const values = data.map(d => +d[col]);
+                let min = d3.min(values);
+                let max = d3.max(values);
+
+                // Expand data range to avoid zero-based scaling
+                const spread = (max - min) * 0.1;
+                xScales[col] = d3.scaleLinear()
+                    .domain([min - spread, max + spread])
+                    .range([0, cellSize]);
+                yScales[col] = d3.scaleLinear()
+                    .domain([min - spread, max + spread])
+                    .range([cellSize, 0]);
+            });
+
+            // Create grid cells
+            const cells = svg.selectAll(".cell")
+                .data(d3.range(n).flatMap(i => d3.range(n).map(j => ({ i, j }))))
+                .enter().append("g")
+                .attr("class", "cell")
+                .attr("transform", d => `translate(${d.j * cellSize}, ${d.i * cellSize})`);
+
+            // Add x and y axes labels
+            cells.filter(d => d.i === n - 1)
+                .append("text")
+                .attr("x", cellSize / 2)
+                .attr("y", cellSize + 40)
+                .text(d => columns[d.j]);
+
+            cells.filter(d => d.j === 0)
+                .append("text")
+                .attr("transform", `rotate(-90) translate(${-cellSize / 2}, ${-30})`)
+                .text(d => columns[d.i]);
+
+            // Add scatterplots
+            cells.filter(d => d.i > d.j)
+                .each(function (d) {
+                    const xCol = columns[d.j];
+                    const yCol = columns[d.i];
+                    const xScale = xScales[xCol];
+                    const yScale = yScales[yCol];
+
+                    // Add x-axis
+                    d3.select(this).append("g")
+                        .attr("class", "x axis")
+                        .attr("transform", `translate(0, ${cellSize})`)
+                        .call(d3.axisBottom(xScale).ticks(5));
+                       
+                    // Add y-axis
+                    d3.select(this).append("g")
+                        .attr("class", "y axis")
+                        .call(d3.axisLeft(yScale).ticks(5));
+
+                    // Add scatter points
+                    d3.select(this).selectAll(".dot")
+                        .data(data)
+                        .enter().append("circle")
+                        .attr("class", "dot")
+                        .attr("r", 3) // 增加半径
+                        .attr("cx", d => xScale(d[xCol]))
+                        .attr("cy", d => yScale(d[yCol]))
+                        .style("fill", "#1f77b4");
+                });
+        });
+    </script>
+</body>
+</html>

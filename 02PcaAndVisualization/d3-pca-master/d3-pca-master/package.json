@@ -1,0 +1,34 @@
+{
+  "name": "d3-pca",
+  "version": "1.0.0",
+  "description": "Principal component analysis plugin for D3.js",
+  "main": "src/index.js",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "start": "webpack-dev-server",
+    "deploy": "NODE_ENV=production webpack && gh-pages -d example"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/likr/d3-pca.git"
+  },
+  "author": "Yosuke ONOUE <onoue@likr-lab.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/likr/d3-pca/issues"
+  },
+  "homepage": "https://github.com/likr/d3-pca",
+  "peerDependencies": {
+    "d3": "^4.10.0"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.6.0",
+    "gh-pages": "^1.0.0",
+    "webpack": "^2.7.0",
+    "webpack-dev-server": "^2.7.1"
+  }
+}

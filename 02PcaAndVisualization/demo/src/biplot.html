@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCA Visualization</title>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <link rel="stylesheet" type = "text/css" href="./style.css">
+</head>
+<body>
+    <div id="biplot"></div>
+    <script>
+        // 数据路径
+        const data_path = "../data/pca_data.csv";
+
+        // 读取数据
+        d3.csv(data_path).then(function(data) {
+            // 转换数据格式
+            data.forEach(d => {
+                d.PC1 = +d.PC_1;
+                d.PC2 = +d.PC_2;
+                d.PC3 = +d.PC_3;
+                d.PC4 = +d.PC_4;
+                d.PC5 = +d.PC_5;
+                d.PC6 = +d.PC_6;
+                d.PC7 = +d.PC_7;
+                d.PC8 = +d.PC_8;
+            });
+
+            // 提取数据点（样本）
+            const samples = data.map(d => [d.PC1, d.PC2]);
+            
+
+            // 提取特征向量（载荷）
+            const loadings = [
+            { feature: "PC3", PC1: data[0].PC3, PC2: data[0].PC2 },
+            { feature: "PC4", PC1: data[0].PC4, PC2: data[0].PC2 },
+            { feature: "PC5", PC1: data[0].PC5, PC2: data[0].PC2 },
+            { feature: "PC6", PC1: data[0].PC6, PC2: data[0].PC2 },
+            { feature: "PC7", PC1: data[0].PC7, PC2: data[0].PC2 },
+            { feature: "PC8", PC1: data[0].PC8, PC2: data[0].PC2 }
+        ];
+
+            // 设置SVG画布
+            const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+            const width = 800 - margin.left - margin.right;
+            const height = 600 - margin.top - margin.bottom;
+
+            const svg = d3.select("#biplot")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // 定义比例尺
+            const x = d3.scaleLinear()
+                .domain([d3.min(samples, d => d[0]), d3.max(samples, d => d[0])])
+                .range([0, width]);
+
+            const y = d3.scaleLinear()
+                .domain([d3.min(samples, d => d[1]), d3.max(samples, d => d[1])])
+                .range([height, 0]);
+
+            // 添加X轴
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x));
+
+            // 添加Y轴
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+            // 添加标题
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", 10 + height + margin.bottom / 2)
+                .style("text-anchor", "middle")
+                .text("Principal Component 1 (PC1)");
+
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -margin.left / 2 - 10)
+                .attr("x", -height / 2)
+                .style("text-anchor", "middle")
+                .text("Principal Component 2 (PC2)");
+
+            // 绘制数据点
+            svg.selectAll(".point")
+                .data(samples)
+                .enter().append("circle")
+                .attr("class", "point")
+                .attr("cx", d => x(d[0]))
+                .attr("cy", d => y(d[1]))
+                .attr("r", 5)
+                .attr("fill", "steelblue");
+
+            // 绘制特征向量
+            svg.selectAll(".loading")
+                .data(loadings)
+                .enter().append("line")
+                .attr("class", "loading")
+                .attr("x1", x(0))
+                .attr("y1", y(0))
+                .attr("x2", d => x(d.PC1*10))
+                .attr("y2", d => y(d.PC2*10))
+                .attr("stroke", "red")
+                .attr("stroke-width", 1);
+
+            // 添加特征标签
+            svg.selectAll(".loading-label")
+                .data(loadings)
+                .enter().append("text")
+                .attr("class", "loading-label")
+                .attr("x", d => x(d.PC1*10) + 10)
+                .attr("y", d => y(d.PC2*10))
+                .text(d => d.feature)
+                .style("font-size", "10px")
+                .style("fill", "black");
+        });
+    </script>
+
+    
+</body>
+</html>

@@ -1,0 +1,22 @@
+<style>
+        .bar {
+            fill: steelblue;
+        }
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            padding: 10px;
+            font: 12px sans-serif;
+            background: transparent;
+            border: 1px solid #000;
+            pointer-events: none;
+            opacity: 0;
+            color:red;
+        }
+    </style>

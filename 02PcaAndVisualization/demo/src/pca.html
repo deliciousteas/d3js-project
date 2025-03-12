@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCA Visualization</title>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <link rel="stylesheet" type = "text/css" href="./style.css">
+</head>
+<body>
+    <div id="scree-plot"></div>
+    <script>
+        // 数据路径
+        const data_path = "../data/pca_explained_variance_ratio.csv";
+
+        // 读取CSV文件
+        d3.csv(data_path).then(function(data) {
+            // 转换数据格式
+            data.forEach(d => {
+                d.PrincipalComponent = +d.PrincipalComponent; // 转换为数字
+                d.ExplainedVarianceRatio = +d.ExplainedVarianceRatio; // 转换为数字
+            });
+            console.log(data);
+            
+            // 设置SVG画布
+            const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+            const width = 1200 - margin.left - margin.right;
+            const height = 600 - margin.top - margin.bottom;
+
+            const svg = d3.select("#scree-plot")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // 定义X轴和Y轴的比例尺
+            const x = d3.scaleBand()
+                .domain(data.map(d => d.PrincipalComponent))
+                .range([0, width])
+                .padding(0.2);
+                
+
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.ExplainedVarianceRatio)])
+                .range([height, 0]);
+
+            // 添加X轴
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x));
+
+            // 添加Y轴
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+            // 添加标题
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", 10+height + margin.bottom / 2)
+                .style("text-anchor", "middle")
+                .text("Principal Component");
+
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -margin.left / 2-10)
+                .attr("x", -height / 2)
+                .style("text-anchor", "middle")
+                .text("Explained Variance Ratio");
+           
+
+            // 绘制柱状图
+            svg.selectAll(".bar")
+                .data(data)
+                .enter().append("rect")
+                .attr("class", "bar")
+                .attr("x", d => x(d.PrincipalComponent))
+                .attr("width", x.bandwidth())
+                .attr("y", d => y(d.ExplainedVarianceRatio))
+                .attr("height", d => height - y(d.ExplainedVarianceRatio))
+                .on("mouseover", function(event, d) {
+                    // 高亮柱状图颜色为红色
+                    d3.select(this).attr("fill", "red");
+
+                    // 显示悬浮提示框
+                })
+                .on("mouseout", function() {
+                    // 恢复柱状图颜色为原始颜色
+                   d3.select(this).attr("fill", "black");
+
+                    // 隐藏悬浮提示框
+                   
+                });
+
+            // 添加悬浮提示框
+            svg.append("rect")
+                .attr("class", "tooltip")
+                .attr("width", 150)
+                .attr("height", 30)
+                .attr("x", -100)
+                .attr("y", -30)
+                .style("opacity", 0);
+        });
+    </script>
+
+
+    
+</body>
+</html>
