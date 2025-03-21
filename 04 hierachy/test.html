@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3.js Depth-Value Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>D3.js Depth-Value Visualization</h1>
+        <div id="chart"></div>
+    </div>
+
+    <script>
+        // 原始数据
+        const arr = [
+            { "depth": 1999, "angle": 1, "value": 70 },
+            { "depth": 2000, "angle": 1, "value": 82.05 },
+            { "depth": 2001, "angle": 1, "value": 75.19 },
+            { "depth": 2002, "angle": 1, "value": 77.07 },
+            { "depth": 2003, "angle": 1, "value": 77.39 },
+            // 更多数据...
+        ];
+
+        // 数据预处理
+        const processedData = arr.reduce((acc, item) => {
+            if (!acc[item.depth]) {
+                acc[item.depth] = [];
+            }
+            acc[item.depth].push([item.angle, item.value]);
+            return acc;
+        }, {});
+
+        // 创建 SVG 容器
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", 200)
+            .attr("height", 1200);
+
+        // 获取 value 的极值
+        const valueExtent = d3.extent(arr, d => d.value);
+
+        // 获取 depth 的极值
+        const depthExtent = d3.extent(arr, d => d.depth);
+
+        // 定义颜色比例尺
+        const colorScale = d3.scaleLinear()
+            .domain(valueExtent)
+            .range(['orange', 'blue']);
+
+        // 定义 Y 轴比例尺
+        const yScale = d3.scaleLinear()
+            .domain(depthExtent)
+            .range([50,1150]); // SVG 坐标系原点在左上角，所以范围是 [底部, 顶部]
+
+        // 绘制矩形
+        Object.keys(processedData).forEach(depth => {
+            const values = processedData[depth].map(d => d[1]);
+            const xScale = d3.scaleLinear()
+                .domain(d3.extent(values))
+                .range([50,200]); // X 轴范围
+
+            const numRects = values.length;
+            const rectWidth = (1900 / numRects);
+
+            values.forEach((value, index) => {
+                svg.append("rect")
+                    .attr("x", xScale(value))
+                    .attr("y", yScale(depth))
+                    .attr("width", rectWidth)
+                    .attr("height", 50) // 每个矩形的高度
+                    .attr("fill", colorScale(value))
+                    .attr("stroke-width", 0);
+            });
+        });
+    </script>
+</body>
+</html>
